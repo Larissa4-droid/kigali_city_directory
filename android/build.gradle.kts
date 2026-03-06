@@ -1,3 +1,6 @@
+import java.io.File
+import org.gradle.api.tasks.Delete
+
 allprojects {
     repositories {
         google()
@@ -5,20 +8,23 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+// Place the Android build outputs in the workspace-level `build/` directory
+// (one level up from the android/ directory). This matches the original intent
+// of moving build artifacts to the workspace `build` folder.
+val workspaceBuildDir = File(rootDir, "../build")
+rootProject.buildDir = workspaceBuildDir
 
+// Put each subproject's build outputs under workspaceBuildDir/<projectName>
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
+    project.buildDir = File(rootProject.buildDir, project.name)
 }
-subprojects {
-    project.evaluationDependsOn(":app")
+
+// Ensure :app is evaluated early when required by other modules.
+// Only evaluate :app if the project actually exists to avoid configuration errors.
+rootProject.findProject(":app")?.let {
+    evaluationDependsOn(":app")
 }
 
 tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+    delete(rootProject.buildDir)
 }
