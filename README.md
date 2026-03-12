@@ -1,1 +1,0 @@
-# kigali_city_directory
